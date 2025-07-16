@@ -5,11 +5,14 @@
 </p>
 
 <p align="center">
-  <a href="https://swe-agent.com/latest/"><strong>Documentation</strong></a>&nbsp; | &nbsp;
-  <a href="https://discord.gg/AVEFbBn2rH"><strong>Discord</strong></a>&nbsp; | &nbsp;
+  <a href="https://swe-agent.com/latest/"><strong>Documentation</strong></a>  |  
+  <a href="https://discord.gg/AVEFbBn2rH"><strong>Discord</strong></a>  |  
   <a href="https://arxiv.org/abs/2405.15793"><strong>Paper</strong></a>
 </p>
 
+## SWE-Agent with SOLA Agent Debugger Integration
+
+This repository contains a version of SWE-Agent with the SOLA Agent Debugger integrated, enhancing its debugging capabilities. To test the agent and debugger, use the `run_finance_tracker_demo_task.sh` script. This script guides users through setting up the Finance Tracker demo, including cloning the repository, configuring an OpenAI API key, selecting an LLM model, and running the SWE-Agent with the debugger enabled.
 
 SWE-agent enables your language model of choice (e.g. GPT-4o or Claude Sonnet 4) to autonomously use tools to
 [fix issues in real GitHub repositories](https://swe-agent.com/latest/usage/hello_world),
