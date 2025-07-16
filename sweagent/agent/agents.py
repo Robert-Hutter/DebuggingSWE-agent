@@ -56,6 +56,8 @@ from sweagent.utils.jinja_warnings import _warn_probably_wrong_jinja_syntax
 from sweagent.utils.log import get_logger
 from sweagent.utils.patch_formatter import PatchFormatter
 
+from sweagent.debugger.debugger_client import AgentDebugger
+from sweagent.run.hooks.apply_patch import SaveApplyPatchHook
 
 class TemplateConfig(BaseModel):
     """This configuration is used to define almost all message templates that are
@@ -222,6 +224,8 @@ EXIT_FORFEIT_TOKEN = "###SWE-AGENT-EXIT-FORFEIT###"
 
 
 class AbstractAgent:
+    debugger: AgentDebugger
+    
     def __init__(self, *args, **kwargs):
         model: AbstractModel
         replay_config: BaseModel | None
@@ -1047,7 +1051,15 @@ class DefaultAgent(AbstractAgent):
                 step.tool_calls = output["tool_calls"]
             self.logger.info(f"💭 THOUGHT\n{step.thought}\n\n🎬 ACTION\n{step.action.strip()}")
             self._chook.on_actions_generated(step=step)
-            return self.handle_action(step)
+            
+            self.debugger.begin_tool_invocation_breakpoint(step.action.strip(), None)
+            try:
+                result = self.handle_action(step)
+                self.debugger.end_tool_invocation_breakpoint(result.observation)
+                return result
+            except Exception as e:
+                self.debugger.end_tool_invocation_breakpoint(f'Tool call failed with {type(e).__name__}: {getattr(e, "message", "")}')
+                raise
         except Exception as e:
             if step.action == step.thought == "":
                 # Probably the parsing failed/no action included. Let's still fill in thought
@@ -1055,6 +1067,13 @@ class DefaultAgent(AbstractAgent):
                 step.thought = step.output
             # Attach the step object to the exception
             e.step = step  # type: ignore
+            
+            exception_message = getattr(e, "message", "")
+            if not exception_message:
+                try:
+                    exception_message = e.args[0]
+                except (IndexError, AttributeError):
+                    pass
             raise
 
     def forward_with_handling(self, history: list[dict[str, str]]) -> StepOutput:
@@ -1074,6 +1093,7 @@ class DefaultAgent(AbstractAgent):
         def handle_error_with_autosubmission(exit_status: str, message: str) -> StepOutput:
             """Attempts to autosubmit (extract patch from the environment) and stops the loop."""
             self.logger.warning(message)
+            if self.debugger: self.debugger.post_debug_message(message)
             return self.attempt_autosubmission_after_error(
                 StepOutput(
                     thought=message,
@@ -1086,6 +1106,7 @@ class DefaultAgent(AbstractAgent):
         def handle_error_with_retry(exception: Exception, template: str, n_requeries: int) -> list[dict[str, str]]:
             """Requeries the model if the error is a format/blocklist/bash syntax error."""
             self.logger.warning("Requerying model after %s (%dth requery)", type(exception).__name__, n_requeries)
+            if self.debugger: self.debugger.post_debug_message(f"Requerying model after {type(exception).__name__} ({n_requeries}th requery)")
             step: StepOutput = getattr(exception, "step", StepOutput())
             self.add_step_to_trajectory(step)
             exception_message = getattr(exception, "message", "")
@@ -1104,7 +1125,8 @@ class DefaultAgent(AbstractAgent):
         n_format_fails = 0
         while n_format_fails < self.max_requeries:
             try:
-                return self.forward(history)
+                result = self.forward(history)
+                return result
 
             # Errors that are raised
 
@@ -1256,6 +1278,26 @@ class DefaultAgent(AbstractAgent):
         self.info["model_stats"] = self.model.stats.model_dump()
 
         self.add_step_to_trajectory(step_output)
+        
+        # Apply patch to local git repository after every step
+        submit_output = self.handle_action(StepOutput(thought='I need to submit a patch.', action='submit'))
+        submit_output = self.handle_action(StepOutput(thought='I need to submit a patch.', action='submit'))
+        if submit_output.submission:
+            submission_info = AgentRunResult(info=AgentInfo(submission=submit_output.submission, exit_status='submitted'), trajectory=self.get_trajectory_data()["trajectory"])
+            hook = SaveApplyPatchHook(apply_patch_locally=True)
+            hook.on_instance_start(index=0, env=self._env, problem_statement=self._problem_statement)
+            hook._output_dir = self._output_dir
+            hook.on_instance_completed(result=submission_info)
+            
+            self.debugger.commit_agent_changes()
+            
+            ## Commit changes to repo in virtual environment, so that the next patch will be a delta of each change.
+            self._env.communicate(
+                input="git add -A && git config user.email \"agent@sweagent.com\" && git config user.name \"SWE Agent\" && git commit -m \"Commit agent changes.\"",
+                timeout=self.tools.config.execution_timeout,
+                check="raise" if self._always_require_zero_exit_code else "ignore",
+            )
+            
 
         self._chook.on_step_done(step=step_output, info=self.info)
         return step_output
@@ -1275,6 +1317,7 @@ class DefaultAgent(AbstractAgent):
             traj_dir: Directory to save the trajectory to
         """
         self.setup(env=env, problem_statement=problem_statement, output_dir=output_dir)
+        self._output_dir = output_dir # Needed for saving intermediate patches
 
         # Run action/observation loop
         self._chook.on_run_start()

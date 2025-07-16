@@ -779,6 +779,7 @@ class LiteLLMModel(AbstractModel):
 
     def query(self, history: History, n: int = 1, temperature: float | None = None) -> list[dict] | dict:
         messages = self._history_to_messages(history)
+        if self.debugger: self.debugger.begin_llm_query_breakpoint({'messages': messages})
 
         def retry_warning(retry_state: RetryCallState):
             exception_info = ""
@@ -820,7 +821,9 @@ class LiteLLMModel(AbstractModel):
             with attempt:
                 result = self._query(messages, n=n, temperature=temperature)
         if n is None or n == 1:
+            if self.debugger: self.debugger.end_llm_query_breakpoint(result[0])
             return result[0]
+        if self.debugger: self.debugger.end_llm_query_breakpoint({'results': result})
         return result
 
     def _history_to_messages(

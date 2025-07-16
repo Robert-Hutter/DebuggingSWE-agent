@@ -51,6 +51,7 @@ from sweagent.run.hooks.open_pr import OpenPRConfig, OpenPRHook
 from sweagent.utils.config import load_environment_variables
 from sweagent.utils.log import add_file_handler, get_logger
 
+from sweagent.debugger.debugger_client import AgentDebugger
 
 class RunSingleActionConfig(BaseModel):
     """Run real-life actions (opening PRs, etc.) if we can solve the issue."""
@@ -195,16 +196,21 @@ class RunSingle:
         output_dir.mkdir(parents=True, exist_ok=True)
         if self.agent.replay_config is not None:  # type: ignore[attr-defined]
             (output_dir / "config.yaml").write_text(yaml.dump(self.agent.replay_config.model_dump_json(), indent=2))  # type: ignore[attr-defined]
-        result = self.agent.run(
-            problem_statement=self.problem_statement,
-            env=self.env,
-            output_dir=output_dir,
-        )
-        self._chooks.on_instance_completed(result=result)
-        self.logger.info("Done")
-        self._chooks.on_end()
-        save_predictions(self.output_dir, self.problem_statement.id, result)
-        self.env.close()
+        
+        debugger: AgentDebugger
+        with AgentDebugger('SWE-Agent', 'localhost', 8765, 'SWE-Workspace/finance_tracker') as debugger:
+            self.agent.debugger = debugger
+            self.agent.model.debugger = debugger
+            result = self.agent.run(
+                problem_statement=self.problem_statement,
+                env=self.env,
+                output_dir=output_dir,
+            )
+            self._chooks.on_instance_completed(result=result)
+            self.logger.info("Done")
+            self._chooks.on_end()
+            save_predictions(self.output_dir, self.problem_statement.id, result)
+            self.env.close()
 
 
 def run_from_config(config: RunSingleConfig):
