@@ -1049,13 +1049,13 @@ class DefaultAgent(AbstractAgent):
             if output.get("tool_calls") is not None:
                 step.tool_call_ids = [call["id"] for call in output["tool_calls"]]
                 step.tool_calls = output["tool_calls"]
+            if self.debugger: (step.action, step.tool_calls) = self.debugger.begin_tool_invocation_breakpoint(step.action.strip(), step.tool_calls)
             self.logger.info(f"💭 THOUGHT\n{step.thought}\n\n🎬 ACTION\n{step.action.strip()}")
             self._chook.on_actions_generated(step=step)
             
-            self.debugger.begin_tool_invocation_breakpoint(step.action.strip(), None)
             try:
                 result = self.handle_action(step)
-                self.debugger.end_tool_invocation_breakpoint(result.observation)
+                if self.debugger: result.observation = self.debugger.end_tool_invocation_breakpoint(result.observation)
                 return result
             except Exception as e:
                 self.debugger.end_tool_invocation_breakpoint(f'Tool call failed with {type(e).__name__}: {getattr(e, "message", "")}')
