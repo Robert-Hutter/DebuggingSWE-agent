@@ -95,7 +95,7 @@ echo
 
 # 7. Start SWE Agent with the selected model
 print_msg "${BLUE}" "Starting SWE-Agent with the Finance Tracker demo..."
-sweagent run \
+python3.12 -m sweagent run \
     --config config/default.yaml \
     --problem_statement.path=SWE-Workspace/finance_tracker/tasks/add_income_tracking_task.md \
     --env.repo.path=SWE-Workspace/finance_tracker \
