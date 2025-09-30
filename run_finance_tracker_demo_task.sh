@@ -38,20 +38,21 @@ else
 fi
 echo
 
-# 3. Check for sweagent/debugger folder and contents
+# 3. Check if agentstepper-api package is installed
 while true; do
-    print_msg "${YELLOW}" "Please copy the SOLA Agent Debugger Client API sources into the sweagent/debugger folder."
+    print_msg "${YELLOW}" "Please install the AgentStepper API package (agentstepper-api)."
     print_msg "${YELLOW}" "Press any key to continue..."
     read -n 1 -s
     echo
 
-    if [ -d "sweagent/debugger" ] && [ "$(ls -A sweagent/debugger)" ]; then
-        print_msg "${GREEN}" "Debugger sources found in sweagent/debugger."
+    if python3 -m pip show agentstepper-api >/dev/null 2>&1; then
+        print_msg "${GREEN}" "Package 'agentstepper-api' is installed."
         break
     else
-        print_msg "${RED}" "Error: sweagent/debugger folder is missing or empty."
+        print_msg "${RED}" "Error: Package 'agentstepper-api' is not installed."
     fi
 done
+
 
 # 4. Check for existing OpenAI API key or prompt for a new one
 if [ -n "$OPENAI_API_KEY" ]; then

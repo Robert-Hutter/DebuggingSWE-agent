@@ -56,7 +56,7 @@ from sweagent.utils.jinja_warnings import _warn_probably_wrong_jinja_syntax
 from sweagent.utils.log import get_logger
 from sweagent.utils.patch_formatter import PatchFormatter
 
-from sweagent.debugger.debugger_client import AgentDebugger
+from agentstepper.api.debugger import AgentStepper
 from sweagent.run.hooks.apply_patch import SaveApplyPatchHook
 
 class TemplateConfig(BaseModel):
@@ -224,7 +224,7 @@ EXIT_FORFEIT_TOKEN = "###SWE-AGENT-EXIT-FORFEIT###"
 
 
 class AbstractAgent:
-    debugger: AgentDebugger
+    debugger: AgentStepper
     
     def __init__(self, *args, **kwargs):
         model: AbstractModel

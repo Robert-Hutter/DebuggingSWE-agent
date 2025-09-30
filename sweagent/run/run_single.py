@@ -51,7 +51,7 @@ from sweagent.run.hooks.open_pr import OpenPRConfig, OpenPRHook
 from sweagent.utils.config import load_environment_variables
 from sweagent.utils.log import add_file_handler, get_logger
 
-from sweagent.debugger.debugger_client import AgentDebugger
+from agentstepper.api.debugger import AgentStepper
 
 class RunSingleActionConfig(BaseModel):
     """Run real-life actions (opening PRs, etc.) if we can solve the issue."""
@@ -197,8 +197,8 @@ class RunSingle:
         if self.agent.replay_config is not None:  # type: ignore[attr-defined]
             (output_dir / "config.yaml").write_text(yaml.dump(self.agent.replay_config.model_dump_json(), indent=2))  # type: ignore[attr-defined]
         
-        debugger: AgentDebugger
-        with AgentDebugger('SWE-Agent', 'localhost', 8765, 'SWE-Workspace/finance_tracker') as debugger:
+        debugger: AgentStepper
+        with AgentStepper('SWE-Agent', 'localhost', 8765, 'SWE-Workspace/finance_tracker') as debugger:
             self.agent.debugger = debugger
             self.agent.model.debugger = debugger
             result = self.agent.run(
