@@ -10,10 +10,43 @@
   <a href="https://arxiv.org/abs/2405.15793"><strong>Paper</strong></a>
 </p>
 
-## SWE-Agent with SOLA Agent Debugger Integration
+## SWE-Agent with AgentStepper Integration
 
 This repository contains a version of SWE-Agent with the SOLA Agent Debugger integrated, enhancing its debugging capabilities. To test the agent and debugger, use the `run_finance_tracker_demo_task.sh` script. This script guides users through setting up the Finance Tracker demo, including cloning the repository, configuring an OpenAI API key, selecting an LLM model, and running the SWE-Agent with the debugger enabled.
 
+## ⚠️ Important Information Regarding AgentStepper Integration
+
+In the current state of this repository, **AgentStepper** is fully integrated into **SWE-Agent**.  
+This means that **AgentStepper will automatically become active when running the agent**.  
+
+To ensure correct operation, follow the setup steps below.  
+
+### 1. Start the AgentStepper Core
+
+Before running SWE-Agent, first start the **AgentStepper Core** service.  
+Then, configure the API integration inside `SWE-Agent/sweagent/run/run_single.py:201`:
+```python
+with AgentStepper('SWE-Agent', 'localhost', 8765, 'SWE-Workspace/finance_tracker') as debugger:
+````
+
+Adjust the parameters to match your environment:
+* **Core host** (e.g., `localhost`)
+* **Port** (e.g., `8765`)
+* **Agent workspace** (e.g., `SWE-Workspace/finance_tracker`)
+
+### 2. Install the AgentStepper API Package
+
+Make sure the **`agentstepper-api`** Python package is installed in the same environment where SWE-Agent is executed.
+
+### 3. Configure OpenAI API Access
+
+Set your **OpenAI API key** as an environment variable in your terminal:
+
+```bash
+export OPENAI_API_KEY="your_api_key_here"
+```
+
+## SWE-Agent
 SWE-agent enables your language model of choice (e.g. GPT-4o or Claude Sonnet 4) to autonomously use tools to
 [fix issues in real GitHub repositories](https://swe-agent.com/latest/usage/hello_world),
 [find cybersecurity vulnerabilities](https://enigma-agent.com/), or
