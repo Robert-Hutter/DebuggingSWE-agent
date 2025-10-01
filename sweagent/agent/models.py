@@ -783,7 +783,7 @@ class LiteLLMModel(AbstractModel):
             try:
                 messages = self.debugger.begin_llm_query_breakpoint({'messages': messages})['messages']
             except Exception as e:
-                pass # Discard changes if there's any issue.
+                if isinstance(e, ConnectionError): raise # Discard changes if there's any issue.
             
 
         def retry_warning(retry_state: RetryCallState):
