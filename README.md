@@ -29,6 +29,10 @@ Then, configure the API integration inside `SWE-Agent/sweagent/run/run_single.py
 with AgentStepper('SWE-Agent', 'localhost', 8765, 'SWE-Workspace/finance_tracker') as debugger:
 ````
 
+Ensure that the AgentStepper API can communicate with the Core.
+
+⚠️ **If SWE-Agent is executed in a Devcontainer**, you might need to add `"runArgs": ["--network=host"]` to the `.devcontainer` configuration.
+
 Adjust the parameters to match your environment:
 * **Core host** (e.g., `localhost`)
 * **Port** (e.g., `8765`)
