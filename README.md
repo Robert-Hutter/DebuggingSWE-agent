@@ -49,6 +49,24 @@ Set your **OpenAI API key** as an environment variable in your terminal:
 ```bash
 export OPENAI_API_KEY="your_api_key_here"
 ```
+---
+### Zero-To-Hero Example Use Case
+Follow this quick example to see AgentStepper in action:
+1. Create a new Python virtual environment
+```
+python3.12 -m venv .venv && source .venv/bin/activate
+```
+2. Complete the steps described above to install the AgentStepper API, and start the Core and UI.
+5. Install sweagent:
+```
+pip install -e .
+```
+6. Run the finance tracker demo task
+```
+./run_finance_tracker_demo_task.sh
+```
+
+Open the AgentStepper UI in your browser and watch the run unfold.
 
 ## SWE-Agent
 SWE-agent enables your language model of choice (e.g. GPT-4o or Claude Sonnet 4) to autonomously use tools to
